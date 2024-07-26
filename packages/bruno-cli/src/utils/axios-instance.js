@@ -1,4 +1,9 @@
 const axios = require('axios');
+const { CookieJar }  = require('tough-cookie');
+const { HttpCookieAgent, HttpsCookieAgent } = require('http-cookie-agent/http');
+
+const jar = new CookieJar();
+
 
 /**
  * Function that configures axios with timing interceptors
@@ -8,7 +13,10 @@ const axios = require('axios');
  */
 function makeAxiosInstance() {
   /** @type {axios.AxiosInstance} */
-  const instance = axios.create();
+  const instance = axios.create({
+    httpAgent: new HttpCookieAgent({ cookies: { jar } }),
+    httpsAgent: new HttpsCookieAgent({ cookies: { jar } }),
+  });
 
   instance.interceptors.request.use((config) => {
     config.headers['request-start-time'] = Date.now();
