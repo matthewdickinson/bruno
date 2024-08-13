@@ -19,7 +19,7 @@ const { makeAxiosInstance } = require('../utils/axios-instance');
 const { addAwsV4Interceptor, resolveAwsV4Credentials } = require('./awsv4auth-helper');
 const { shouldUseProxy, PatchedHttpsProxyAgent } = require('../utils/proxy-util');
 const path = require('path');
-const { getCookieEnabledAgent } = require('../utils/cookie-util');
+const { getWrappedAgent } = require('../utils/http-agent-util');
 const protocolRegex = /^([-+\w]{1,25})(:?\/\/|:)/;
 
 const runSingleRequest = async function (
@@ -182,15 +182,14 @@ const runSingleRequest = async function (
 
       const httpsAgentClass = socksEnabled ? SocksProxyAgent: PatchedHttpsProxyAgent;
       const httpAgentClass = socksEnabled ? SocksProxyAgent : HttpProxyAgent;
-      console.log('replacing');
-      request.httpsAgent = getCookieEnabledAgent(httpsAgentClass,
+      request.httpsAgent = getWrappedAgent(httpsAgentClass,
         proxyUri,
         Object.keys(httpsAgentRequestFields).length > 0 ? { ...httpsAgentRequestFields } : undefined
       );
-      request.httpAgent = new getCookieEnabledAgent(httpAgentClass, proxyUri);
+      request.httpAgent = getWrappedAgent(httpAgentClass, proxyUri);
 
     } else if (Object.keys(httpsAgentRequestFields).length > 0) {
-      request.httpsAgent = getCookieEnabledAgent(https.Agent, null, {
+      request.httpsAgent = getWrappedAgent(https.Agent, null, {
         ...httpsAgentRequestFields
       });
     }
@@ -203,7 +202,7 @@ const runSingleRequest = async function (
     let response, responseTime;
     try {
       // run request
-      const axiosInstance = makeAxiosInstance();
+      const axiosInstance = makeAxiosInstance(options);
 
       if (request.awsv4config) {
         // todo: make this happen in prepare-request.js
